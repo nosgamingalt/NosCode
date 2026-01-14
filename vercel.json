@@ -11,10 +11,5 @@
       "src": "/(.*)",
       "dest": "server.js"
     }
-  ],
-  "env": {
-    "DATABASE_URL": "@database_url",
-    "HF_TOKEN": "@hf_token",
-    "NODE_ENV": "production"
-  }
+  ]
 }
