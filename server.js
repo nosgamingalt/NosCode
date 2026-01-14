@@ -1256,6 +1256,12 @@ app.get('/api/terminal/processes', async (req, res) => {
     }
 });
 
-app.listen(port, () => {
-    console.log(`Server listening on http://localhost:${port}`);
-});
+// Export for Vercel serverless
+module.exports = app;
+
+// Only listen if not in Vercel (local development)
+if (process.env.NODE_ENV !== 'production') {
+    app.listen(port, () => {
+        console.log(`Server listening on http://localhost:${port}`);
+    });
+}
