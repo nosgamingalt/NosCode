@@ -11,16 +11,23 @@ app.use(express.static(path.join(__dirname)));
 
 // Initialize database on first request (lazy loading for serverless)
 let dbInitialized = false;
+let initError = null;
+
 async function ensureDbInitialized() {
-    if (!dbInitialized) {
-        try {
-            await db.initDatabase();
-            dbInitialized = true;
-            console.log('✅ Database initialized');
-        } catch (err) {
-            console.error('⚠️  Database initialization failed:', err.message);
-            // Don't exit - allow app to continue serving static files
-        }
+    if (dbInitialized) return;
+    
+    if (initError) {
+        throw new Error(`Database unavailable: ${initError.message}`);
+    }
+    
+    try {
+        await db.initDatabase();
+        dbInitialized = true;
+        console.log('✅ Database initialized successfully');
+    } catch (err) {
+        console.error('❌ Database initialization failed:', err);
+        initError = err;
+        throw err;
     }
 }
 

@@ -18,6 +18,10 @@
       "use": "@vercel/static"
     },
     {
+      "src": "noscode.jpg",
+      "use": "@vercel/static"
+    },
+    {
       "src": "images/**",
       "use": "@vercel/static"
     }
