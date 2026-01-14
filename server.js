@@ -9,11 +9,20 @@ const port = process.env.PORT || 8080;
 app.use(express.json({ limit: '50mb' })); // Increase limit for base64 images
 app.use(express.static(path.join(__dirname)));
 
-// Initialize database on startup
-db.initDatabase().catch(err => {
-    console.error('Failed to initialize database:', err);
-    process.exit(1);
-});
+// Initialize database on first request (lazy loading for serverless)
+let dbInitialized = false;
+async function ensureDbInitialized() {
+    if (!dbInitialized) {
+        try {
+            await db.initDatabase();
+            dbInitialized = true;
+            console.log('✅ Database initialized');
+        } catch (err) {
+            console.error('⚠️  Database initialization failed:', err.message);
+            // Don't exit - allow app to continue serving static files
+        }
+    }
+}
 
 app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "index.html"));
@@ -56,6 +65,7 @@ app.post("/api/guest-chat", async (req, res) => {
 // List projects
 app.get('/api/projects', async (req, res) => {
     try {
+        await ensureDbInitialized();
         const projects = await db.listProjects();
         res.json({ projects });
     } catch (err) {
@@ -67,6 +77,7 @@ app.get('/api/projects', async (req, res) => {
 // Create project
 app.post('/api/projects/:name', async (req, res) => {
     try {
+        await ensureDbInitialized();
         const name = req.params.name;
         await db.createProject(name);
         res.json({ ok: true });
@@ -79,6 +90,7 @@ app.post('/api/projects/:name', async (req, res) => {
 // Delete project
 app.delete('/api/projects/:name', async (req, res) => {
     try {
+        await ensureDbInitialized();
         const name = req.params.name;
         await db.deleteProject(name);
         res.json({ ok: true });
@@ -91,6 +103,7 @@ app.delete('/api/projects/:name', async (req, res) => {
 // List files in project
 app.get('/api/files/:project', async (req, res) => {
     try {
+        await ensureDbInitialized();
         const project = req.params.project;
         const subpath = req.query.path || '';
         const files = await db.listFiles(project, subpath);
@@ -104,6 +117,7 @@ app.get('/api/files/:project', async (req, res) => {
 // Read a file
 app.get('/api/file/:project', async (req, res) => {
     try {
+        await ensureDbInitialized();
         const project = req.params.project;
         const filepath = req.query.path || '';
         if (!filepath) return res.status(400).json({ error: 'path query parameter required' });
@@ -119,6 +133,7 @@ app.get('/api/file/:project', async (req, res) => {
 // Write a file
 app.post('/api/file/:project', async (req, res) => {
     try {
+        await ensureDbInitialized();
         const project = req.params.project;
         const filepath = req.query.path || '';
         if (!filepath) return res.status(400).json({ error: 'path query parameter required' });
@@ -137,6 +152,7 @@ app.post('/api/file/:project', async (req, res) => {
 // Get chat history for a project
 app.get('/api/chat-history/:project', async (req, res) => {
     try {
+        await ensureDbInitialized();
         const project = req.params.project;
         const history = await db.loadChatHistory(project);
         res.json({ history });
@@ -149,6 +165,7 @@ app.get('/api/chat-history/:project', async (req, res) => {
 // Delete chat history for a project
 app.delete('/api/chat-history/:project', async (req, res) => {
     try {
+        await ensureDbInitialized();
         const project = req.params.project;
         await db.deleteChatHistory(project);
         res.json({ success: true, message: 'Chat history deleted' });
@@ -167,6 +184,7 @@ app.post('/api/ai/auto-fix', async (req, res) => {
     const fixes = [];
     
     try {
+        await ensureDbInitialized();
         const projectFiles = await db.getAllProjectFiles(project);
         
         // Determine run command if not provided
@@ -328,6 +346,7 @@ Remember: Output ONLY the files that need fixing. Use the FILE: format.`;
 // Delete a file
 app.delete('/api/file/:project', async (req, res) => {
     try {
+        await ensureDbInitialized();
         const project = req.params.project;
         const filepath = req.query.path || '';
         if (!filepath) return res.status(400).json({ error: 'path query parameter required' });
@@ -404,6 +423,7 @@ async function callHF(prompt, extra = {}) {
 
 app.post('/api/ai/chat', async (req, res) => {
     try {
+        await ensureDbInitialized();
         const { prompt, code, filename, project, image } = req.body || {};
         if (!prompt) return res.status(400).json({ response: 'Prompt required' });
         
