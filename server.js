@@ -35,6 +35,33 @@ app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "index.html"));
 });
 
+// Health check endpoint
+app.get("/api/health", async (req, res) => {
+    try {
+        const dbUrl = process.env.DATABASE_URL;
+        const hasDbUrl = !!dbUrl;
+        const nodeEnv = process.env.NODE_ENV;
+        
+        await ensureDbInitialized();
+        
+        res.json({ 
+            status: 'ok',
+            database: 'connected',
+            hasDbUrl,
+            nodeEnv,
+            dbInitialized
+        });
+    } catch (err) {
+        res.status(500).json({ 
+            status: 'error',
+            database: 'failed',
+            error: err.message,
+            hasDbUrl: !!process.env.DATABASE_URL,
+            nodeEnv: process.env.NODE_ENV
+        });
+    }
+});
+
 app.post("/api/guest-chat", async (req, res) => {
     const { message, model } = req.body;
     const HF_TOKEN = process.env.HF_TOKEN;
