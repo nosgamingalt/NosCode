@@ -1,5 +1,9 @@
 const { Pool } = require('pg');
 
+// Log environment check
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('DATABASE_URL exists:', !!process.env.DATABASE_URL);
+
 // Initialize PostgreSQL connection pool
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,

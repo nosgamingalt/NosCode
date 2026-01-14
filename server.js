@@ -89,8 +89,8 @@ app.post('/api/projects/:name', async (req, res) => {
         await db.createProject(name);
         res.json({ ok: true });
     } catch (err) {
-        console.error('Create project error', err);
-        res.status(500).json({ error: 'Could not create project' });
+        console.error('Create project error:', err.message, err.stack);
+        res.status(500).json({ error: err.message || 'Could not create project' });
     }
 });
 
