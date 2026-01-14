@@ -1608,9 +1608,103 @@ document.addEventListener('DOMContentLoaded', () => {
     initEventListeners();
     initResizeHandlers();
     updateProjectsList();
+    initMobileHandlers();
     
     // Focus editor when clicking on editor area
     document.getElementById('editor-area').addEventListener('click', () => {
         if (editor) editor.focus();
     });
 });
+
+// =====================================================
+// Mobile Responsive Handlers
+// =====================================================
+function initMobileHandlers() {
+    const mobileToolbar = document.querySelector('.mobile-toolbar');
+    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+    const mobileAiBtn = document.getElementById('mobile-ai-btn');
+    const mobileBackdrop = document.getElementById('mobile-backdrop');
+    const sidebar = document.querySelector('.sidebar');
+    const aiChat = document.querySelector('.ai-chat');
+    const mobileTitle = document.getElementById('mobile-title');
+    
+    // Show mobile toolbar on small screens
+    function checkMobile() {
+        if (window.innerWidth <= 768) {
+            mobileToolbar.style.display = 'flex';
+        } else {
+            mobileToolbar.style.display = 'none';
+            sidebar.classList.remove('mobile-open');
+            aiChat.classList.remove('mobile-open');
+            mobileBackdrop.classList.remove('active');
+        }
+    }
+    
+    // Update mobile title with current file
+    function updateMobileTitle() {
+        if (currentProject && currentFile) {
+            mobileTitle.textContent = currentFile.split('/').pop();
+        } else if (currentProject) {
+            mobileTitle.textContent = currentProject;
+        } else {
+            mobileTitle.textContent = 'NOS Code';
+        }
+    }
+    
+    // Toggle sidebar
+    mobileMenuBtn.addEventListener('click', () => {
+        sidebar.classList.toggle('mobile-open');
+        aiChat.classList.remove('mobile-open');
+        
+        if (sidebar.classList.contains('mobile-open')) {
+            mobileBackdrop.classList.add('active');
+        } else {
+            mobileBackdrop.classList.remove('active');
+        }
+    });
+    
+    // Toggle AI chat
+    mobileAiBtn.addEventListener('click', () => {
+        aiChat.classList.toggle('mobile-open');
+        sidebar.classList.remove('mobile-open');
+        
+        if (aiChat.classList.contains('mobile-open')) {
+            mobileBackdrop.classList.add('active');
+        } else {
+            mobileBackdrop.classList.remove('active');
+        }
+    });
+    
+    // Close overlays when backdrop clicked
+    mobileBackdrop.addEventListener('click', () => {
+        sidebar.classList.remove('mobile-open');
+        aiChat.classList.remove('mobile-open');
+        mobileBackdrop.classList.remove('active');
+    });
+    
+    // Close sidebar when file is selected on mobile
+    const originalLoadFile = window.loadFile;
+    window.loadFile = function(...args) {
+        if (window.innerWidth <= 768) {
+            sidebar.classList.remove('mobile-open');
+            mobileBackdrop.classList.remove('active');
+            updateMobileTitle();
+        }
+        return originalLoadFile.apply(this, args);
+    };
+    
+    // Update title when project changes
+    const originalSwitchProject = window.switchProject;
+    window.switchProject = function(...args) {
+        const result = originalSwitchProject.apply(this, args);
+        updateMobileTitle();
+        return result;
+    };
+    
+    // Check on load and resize
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    // Initial title update
+    updateMobileTitle();
+}
